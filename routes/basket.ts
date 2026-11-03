@@ -16,6 +16,12 @@ export function retrieveBasket () {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = req.params.id
+      const user = security.authenticatedUsers.from(req)
+      // Access control: a user may read only their own basket; ownership is checked on the server, not taken from the client
+      if (!user || user.bid === undefined || user.bid === null || Number(user.bid) !== Number(id)) {
+        res.status(403).json({ error: 'Not allowed' })
+        return
+      }
       const basket = await BasketModel.findOne({ where: { id }, include: [{ model: ProductModel, paranoid: false, as: 'Products' }] })
       /* jshint eqeqeq:false */
       challengeUtils.solveIf(challenges.basketAccessChallenge, () => {
